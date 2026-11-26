@@ -10,13 +10,13 @@ def check(name, r, expected):
     ok = r.status_code == expected
     results.append(ok)
     status = 'OK  ' if ok else 'FAIL'
-    print(f'{status} {name} (attendu {expected}, reçu {r.status_code})')
+    print(f'{status} {name} (expected {expected},   output {r.status_code})')
     return ok
 
 db.carmarket.delete_many({})
 init = db.carmarket.insert_many(CARS)
 
-# Adapte ces champs à ceux que ta route POST exige
+# key-values that route POST need
 NEW_CAR = {'brand': 'Fiat', 'model': 'Panda', 'year': 2019,
            'price': 8500, 'city': 'Lyon', 'fuel': 'Petrol', 'mileage_km': 60000}
 car_id = 9  
@@ -31,24 +31,24 @@ check('GET non valid car id', requests.get(f'{BASE}/cars/{99}'), 404)
 
 # POST
 r = requests.post(f'{BASE}/cars', json=NEW_CAR)
-if not check('POST valide', r, 201):
-    sys.exit('POST a échoué : impossible de tester la suite')
+if not check('POST valid', r, 201):
+    sys.exit('POST failed : impossible de tester la suite')
 check('POST incomplet', requests.post(f'{BASE}/cars', json={'brand': 'Fiat'}), 400)
-check('POST pas en JSON', requests.post(f'{BASE}/cars', data='brand=Fiat'), 400)
+check('POST not JSON format', requests.post(f'{BASE}/cars', data='brand=Fiat'), 400)
 
 # PATCH
 url = f'{BASE}/cars/{car_id}'
-check('PATCH prix', requests.patch(url, json={'price': 9000}), 200)
-check('PATCH champ interdit', requests.patch(url, json={'id': 99}), 400)
-check('PATCH vide', requests.patch(url, json={}), 400)
-check('PATCH annonce inconnue', requests.patch(f'{BASE}/cars/999999', json={'price': 1}), 404)
+check('PATCH price', requests.patch(url, json={'price': 9000}), 200)
+check('PATCH forbiden input', requests.patch(url, json={'id': 99}), 400)
+check('PATCH empty', requests.patch(url, json={}), 400)
+check('PATCH unknown advert', requests.patch(f'{BASE}/cars/999999', json={'price': 1}), 404)
 
 # PUT
 check('PUT complet', requests.put(url, json=NEW_CAR), 200)
-check('PUT annonce inconnue', requests.put(f'{BASE}/cars/999999', json=NEW_CAR), 404)
+check('PUT unknown advert', requests.put(f'{BASE}/cars/999999', json=NEW_CAR), 404)
 
 # DELETE : supprime aussi l'annonce de test, ta base reste propre
 check('DELETE', requests.delete(url), 204)
-check('DELETE une seconde fois', requests.delete(url), 404)
+check('DELETE again', requests.delete(url), 404)
 
 print(f'\n{sum(results)}/{len(results)} OK')
